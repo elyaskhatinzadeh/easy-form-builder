@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
-import { Input, Button, RadioGroup, Radio, Switch, Select, SelectItem } from '@nextui-org/react';
+import {Input, Button, RadioGroup, Radio, Switch, Select, SelectItem, Checkbox, CheckboxGroup, Textarea} from '@nextui-org/react';
 
 interface FieldOption {
     value: string;
@@ -9,7 +9,7 @@ interface FieldOption {
 interface Field {
     key: string;
     label: string;
-    type: 'text' | 'select' | 'radio' | 'switch';
+    type: 'text' | 'textarea' | 'select' | 'radio' | 'switch' | 'checkbox' | 'checkbox-group';
     options?: FieldOption[] | ((formData: Record<string, any>) => FieldOption[]);
     colSize?: number;
     attributes?: Record<string, any>;
@@ -103,6 +103,12 @@ const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSu
                         <Input clearable bordered name={name} label={label} {...commonProps} />
                     </div>
                 );
+            case 'textarea':
+                return (
+                    <div className={colClass} key={name}>
+                        <Textarea clearable bordered name={name} label={label} {...commonProps} />
+                    </div>
+                );
             case 'select':
                 return (
                     <div className={colClass} key={name}>
@@ -147,6 +153,33 @@ const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSu
                             {...attributes}
                         />
                         <label className="ml-2">{label}</label>
+                    </div>
+                );
+            case 'checkbox':
+                return (
+                    <div className={colClass} key={name}>
+                        <Checkbox
+                            value={value || ''}
+                            onValueChange={(val) => handleChange(key, val, index, nestedKey)}
+                            {...attributes}
+                        >{label}</Checkbox>
+                    </div>
+                );
+            case 'checkbox-group':
+                return (
+                    <div className={colClass} key={name}>
+                        <CheckboxGroup
+                            label={label}
+                            value={value || []}
+                            onChange={(val) => handleChange(key, val, index, nestedKey)}
+                            {...attributes}
+                        >
+                            {fieldOptions?.map((option) => (
+                                <Checkbox key={option.value} value={option.value}>
+                                    {option.label}
+                                </Checkbox>
+                            ))}
+                        </CheckboxGroup>
                     </div>
                 );
             default:
