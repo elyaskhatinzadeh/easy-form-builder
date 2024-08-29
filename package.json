@@ -1,0 +1,31 @@
+{
+  "name": "easy-form-builder",
+  "version": "1.0.3",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elyaskhatinzadeh/easy-form-builder.git"
+  },
+  "keywords": [
+    "easy form",
+    "form builder",
+    "react form builder",
+    "react",
+    "reactjs",
+    "react js",
+    "nextui",
+    "tailwindcss"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "homepage": "https://github.com/elyaskhatinzadeh/easy-form-builder#readme",
+  "dependencies": {
+    "@nextui-org/react": "^2.4.6",
+    "framer-motion": "^11.3.30",
+    "react": "^18"
+  }
+}
