@@ -56,19 +56,28 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
     const [formData, setFormData] = useState<Record<string, any>>(initialValues);
     const [activeTab, setActiveTab] = useState<string | null>(null); // State for active tab
 
-    // Group fields by tab
-    const tabbedFields: Record<string, Field[]> = {};
-    let hasTabs = fields.some((field) => field.tab);
 
-    fields.forEach((field) => {
-        if (field.tab) {
-            hasTabs = true;
-            if (!tabbedFields[field.tab]) {
-                tabbedFields[field.tab] = [];
-            }
-            tabbedFields[field.tab].push(field);
-        }
+    // Filter fields based on `show` and `hide` conditions before grouping them into tabs
+    const filteredFields = fields.filter((field) => {
+        const shouldShow = typeof field.show === 'function' ? field.show(formData) : true;
+        const shouldHide = typeof field.hide === 'function' ? field.hide(formData) : false;
+        return shouldShow && !shouldHide;
     });
+
+    // Determine if there are any tabbed fields after filtering
+    let hasTabs = filteredFields.some((field) => field.tab);
+
+    // Group fields into tabs after filtering
+    const tabbedFields = filteredFields.reduce((acc, field) => {
+        if (field.tab) {
+            if (!acc[field.tab]) {
+                acc[field.tab] = [];
+            }
+            acc[field.tab].push(field);
+        }
+        return acc;
+    }, {} as Record<string, Field[]>);
+
 
     // Set the initial active tab if there are tabs
     useEffect(() => {
