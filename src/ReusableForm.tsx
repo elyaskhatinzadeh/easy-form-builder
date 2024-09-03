@@ -24,6 +24,7 @@ interface Field {
     label: string;
     type:
         | 'text'
+        | 'hidden'
         | 'textarea'
         | 'select'
         | 'radio'
@@ -180,6 +181,12 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                 return (
                     <div className={colClass} key={name}>
                         <Input clearable bordered name={name} label={label} {...commonProps} />
+                    </div>
+                );
+            case 'hidden':
+                return (
+                    <div className={colClass} key={name}>
+                        <input type="hidden" name={name} {...commonProps} />
                     </div>
                 );
             case 'textarea':
