@@ -1,5 +1,18 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
-import {Input, Button, RadioGroup, Radio, Switch, Select, SelectItem, Checkbox, CheckboxGroup, Textarea} from '@nextui-org/react';
+import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
+import {
+    Input,
+    Button,
+    RadioGroup,
+    Radio,
+    Switch,
+    Select,
+    SelectItem,
+    Checkbox,
+    CheckboxGroup,
+    Textarea,
+    Tabs,
+    Tab
+} from '@nextui-org/react';
 
 interface FieldOption {
     value: string;
@@ -9,7 +22,15 @@ interface FieldOption {
 interface Field {
     key: string;
     label: string;
-    type: 'text' | 'textarea' | 'select' | 'radio' | 'switch' | 'checkbox' | 'checkbox-group' | 'custom';
+    type:
+        | 'text'
+        | 'textarea'
+        | 'select'
+        | 'radio'
+        | 'switch'
+        | 'checkbox'
+        | 'checkbox-group'
+        | 'custom';
     options?: FieldOption[] | ((formData: Record<string, any>) => FieldOption[]);
     colSize?: number;
     attributes?: Record<string, any>;
@@ -17,19 +38,51 @@ interface Field {
     hide?: (formData: Record<string, any>) => boolean;
     repeatable?: boolean;
     fields?: Field[];
-    component?: React.ReactNode;  // New property for custom components
+    component?: React.ReactNode;
+    tab?: string; // New property to specify the tab
 }
 
 interface ReusableFormProps {
     fields: Field[];
     initialValues: Record<string, any>;
-    onSubmit: (formData: Record<string, any>) => void;
+    onSubmit: (formData: Record<string, any>, setFormData: React.Dispatch<React.SetStateAction<Record<string, any>>>) => void;
 }
 
-const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSubmit }) => {
+const ReusableForm: React.FC<ReusableFormProps> = ({
+                                                       fields,
+                                                       initialValues,
+                                                       onSubmit,
+                                                   }) => {
     const [formData, setFormData] = useState<Record<string, any>>(initialValues);
+    const [activeTab, setActiveTab] = useState<string | null>(null); // State for active tab
 
-    const handleChange = (name: string, value: any, index: number | null = null, nestedKey: string | null = null) => {
+    // Group fields by tab
+    const tabbedFields: Record<string, Field[]> = {};
+    let hasTabs = fields.some((field) => field.tab);
+
+    fields.forEach((field) => {
+        if (field.tab) {
+            hasTabs = true;
+            if (!tabbedFields[field.tab]) {
+                tabbedFields[field.tab] = [];
+            }
+            tabbedFields[field.tab].push(field);
+        }
+    });
+
+    // Set the initial active tab if there are tabs
+    useEffect(() => {
+        if (hasTabs && !activeTab) {
+            setActiveTab(Object.keys(tabbedFields)[0]); // Set the first tab as active if tabs are present
+        }
+    }, [hasTabs, activeTab]);
+
+    const handleChange = (
+        name: string,
+        value: any,
+        index: number | null = null,
+        nestedKey: string | null = null
+    ) => {
         setFormData((prev) => {
             const updatedData = { ...prev };
             if (index !== null) {
@@ -70,11 +123,25 @@ const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSu
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSubmit(formData);
+        onSubmit(formData, setFormData);
     };
 
-    const renderField = (field: Field, index: number | null = null, nestedKey: string | null = null) => {
-        const { key, label, type, options, colSize, attributes, show, hide, component  } = field;
+    const renderField = (
+        field: Field,
+        index: number | null = null,
+        nestedKey: string | null = null
+    ) => {
+        const {
+            key,
+            label,
+            type,
+            options,
+            colSize,
+            attributes,
+            show,
+            hide,
+            component,
+        } = field;
 
         const shouldShow = typeof show === 'function' ? show(formData) : true;
         const shouldHide = typeof hide === 'function' ? hide(formData) : false;
@@ -91,11 +158,13 @@ const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSu
 
         const commonProps = {
             value: value || '',
-            onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => handleChange(key, e.target.value, index, nestedKey),
+            onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+                handleChange(key, e.target.value, index, nestedKey),
             ...attributes,
         };
 
-        const fieldOptions = typeof options === 'function' ? options(formData) : options;
+        const fieldOptions =
+            typeof options === 'function' ? options(formData) : options;
 
         switch (type) {
             case 'text':
@@ -107,7 +176,13 @@ const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSu
             case 'textarea':
                 return (
                     <div className={colClass} key={name}>
-                        <Textarea clearable bordered name={name} label={label} {...commonProps} />
+                        <Textarea
+                            clearable
+                            bordered
+                            name={name}
+                            label={label}
+                            {...commonProps}
+                        />
                     </div>
                 );
             case 'select':
@@ -163,7 +238,9 @@ const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSu
                             value={value || ''}
                             onValueChange={(val) => handleChange(key, val, index, nestedKey)}
                             {...attributes}
-                        >{label}</Checkbox>
+                        >
+                            {label}
+                        </Checkbox>
                     </div>
                 );
             case 'checkbox-group':
@@ -197,43 +274,88 @@ const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSu
         }
     };
 
-    const renderRepeatableField = (field: Field) => (
-        <div key={field.key} className="col-span-1 sm:col-span-2 md:col-span-3 mb-4">
-            <label>{field.label}</label>
-            {formData[field.key]?.map((_: any, index: number) => (
-                <div key={`${field.key}-${index}`} className="mb-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {field.fields?.map((nestedField) => (
-                            <React.Fragment key={`${nestedField.key}-${index}`}>
-                                {renderField({ ...nestedField, key: field.key }, index, nestedField.key)}
-                            </React.Fragment>
-                        ))}
+    const renderRepeatableField = (field: Field) => {
+
+        const {
+            show,
+            hide,
+        } = field;
+
+        const shouldShow = typeof show === 'function' ? show(formData) : true;
+        const shouldHide = typeof hide === 'function' ? hide(formData) : false;
+        if (!shouldShow || shouldHide) return null;
+
+        return (<div
+                key={field.key}
+                className="col-span-1 sm:col-span-2 md:col-span-3 mb-4"
+            >
+                <label>{field.label}</label>
+                {formData[field.key]?.map((_: any, index: number) => (
+                    <div key={`${field.key}-${index}`} className="mb-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {field.fields?.map((nestedField) => (
+                                <React.Fragment key={`${nestedField.key}-${index}`}>
+                                    {renderField(
+                                        { ...nestedField, key: field.key },
+                                        index,
+                                        nestedField.key
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                        <Button
+                            auto
+                            flat
+                            color="error"
+                            size="xs"
+                            onClick={() => handleRemoveRepeatable(field.key, index)}
+                            className="mt-2"
+                        >
+                            Remove
+                        </Button>
                     </div>
-                    <Button
-                        auto
-                        flat
-                        color="error"
-                        size="xs"
-                        onClick={() => handleRemoveRepeatable(field.key, index)}
-                        className="mt-2"
-                    >
-                        Remove
-                    </Button>
-                </div>
-            ))}
-            <Button auto flat color="primary" onClick={() => handleAddRepeatable(field.key)} className="mt-2">
-                Add {field.label}
-            </Button>
-        </div>
-    );
+                ))}
+                <Button
+                    auto
+                    flat
+                    size="sm"
+                    onClick={() => handleAddRepeatable(field.key)}
+                >
+                    Add {field.label}
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit}>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {fields.map((field) =>
-                    field.repeatable && Array.isArray(formData[field.key]) ? renderRepeatableField(field) : <React.Fragment key={field.key}>{renderField(field)}</React.Fragment>
-                )}
+                {fields
+                    .filter((field) => !field.tab)
+                    .map((field) =>
+                        field.repeatable && Array.isArray(formData[field.key])
+                            ? renderRepeatableField(field)
+                            : renderField(field)
+                    )}
             </div>
+
+            {hasTabs && (
+                <Tabs className="mb-4" selectedValue={activeTab} onValueChange={setActiveTab} disableAnimation>
+                    {Object.keys(tabbedFields).map((tabName) => (
+                        <Tab key={tabName} title={tabName} value={tabName}>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {tabbedFields[tabName].map((field) =>
+                                    field.repeatable && Array.isArray(formData[field.key])
+                                        ? renderRepeatableField(field)
+                                        : renderField(field)
+                                )}
+                            </div>
+                        </Tab>
+                    ))}
+                </Tabs>
+            )}
+
             <Button type="submit" className="mt-4">
                 Submit
             </Button>
