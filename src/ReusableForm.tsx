@@ -9,7 +9,7 @@ interface FieldOption {
 interface Field {
     key: string;
     label: string;
-    type: 'text' | 'textarea' | 'select' | 'radio' | 'switch' | 'checkbox' | 'checkbox-group';
+    type: 'text' | 'textarea' | 'select' | 'radio' | 'switch' | 'checkbox' | 'checkbox-group' | 'custom';
     options?: FieldOption[] | ((formData: Record<string, any>) => FieldOption[]);
     colSize?: number;
     attributes?: Record<string, any>;
@@ -17,6 +17,7 @@ interface Field {
     hide?: (formData: Record<string, any>) => boolean;
     repeatable?: boolean;
     fields?: Field[];
+    component?: React.ReactNode;  // New property for custom components
 }
 
 interface ReusableFormProps {
@@ -73,7 +74,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSu
     };
 
     const renderField = (field: Field, index: number | null = null, nestedKey: string | null = null) => {
-        const { key, label, type, options, colSize, attributes, show, hide } = field;
+        const { key, label, type, options, colSize, attributes, show, hide, component  } = field;
 
         const shouldShow = typeof show === 'function' ? show(formData) : true;
         const shouldHide = typeof hide === 'function' ? hide(formData) : false;
@@ -180,6 +181,15 @@ const ReusableForm: React.FC<ReusableFormProps> = ({ fields, initialValues, onSu
                                 </Checkbox>
                             ))}
                         </CheckboxGroup>
+                    </div>
+                );
+            case 'custom':
+                return (
+                    <div className={colClass} key={name}>
+                        {React.cloneElement(component as React.ReactElement, {
+                            value: value || '',
+                            onChange: (val: string) => handleChange(key, val, index, nestedKey),
+                        })}
                     </div>
                 );
             default:
