@@ -303,12 +303,12 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
 
         return (<div
                 key={field.key}
-                className="col-span-1 sm:col-span-2 md:col-span-3 mb-4"
+                className="col-span-1 sm:col-span-2 md:col-span-4 mb-4"
             >
                 <label>{field.label}</label>
                 {formData[field.key]?.map((_: any, index: number) => (
                     <div key={`${field.key}-${index}`} className="mb-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             {field.fields?.map((nestedField) => (
                                 <React.Fragment key={`${nestedField.key}-${index}`}>
                                     {renderField(
@@ -346,7 +346,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
     return (
         <form onSubmit={handleSubmit}>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {fields
                     .filter((field) => !field.tab)
                     .map((field) =>
@@ -360,7 +360,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                 <Tabs className="mb-4" selectedValue={activeTab} onValueChange={setActiveTab} disableAnimation>
                     {Object.keys(tabbedFields).map((tabName) => (
                         <Tab key={tabName} title={tabName} value={tabName}>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 {tabbedFields[tabName].map((field) =>
                                     field.repeatable && Array.isArray(formData[field.key])
                                         ? renderRepeatableField(field)
