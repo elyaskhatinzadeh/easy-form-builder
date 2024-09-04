@@ -164,7 +164,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                 ? formData[key]?.[index]
                 : formData[key];
 
-        const colClass = colSize ? `col-span-${colSize}` : 'col-span-1';
+        const colClass = colSize ? `col-span-${colSize}` : 'col-span-4';
 
         const commonProps = {
             value: value || '',
