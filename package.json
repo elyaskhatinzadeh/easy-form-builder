@@ -1,6 +1,6 @@
 {
   "name": "easy-form-builder",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -26,6 +26,7 @@
   "dependencies": {
     "@nextui-org/react": "^2.4.6",
     "framer-motion": "^11.3.30",
+    "joi": "^17.13.3",
     "react": "^18"
   }
 }

@@ -1,4 +1,5 @@
 import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
+import Joi from 'joi';
 import {
     Input,
     Button,
@@ -38,9 +39,14 @@ interface Field {
     show?: (formData: Record<string, any>) => boolean;
     hide?: (formData: Record<string, any>) => boolean;
     repeatable?: boolean;
+    deletable?: (formData: Record<string, any>) => boolean;
+    addable?: (formData: Record<string, any>) => boolean;
+    addLabel?: string;
     fields?: Field[];
     component?: React.ReactNode;
-    tab?: string; // New property to specify the tab
+    placeholder?: string;
+    tab?: string;
+    rule?: Joi.Schema;
 }
 
 interface ReusableFormProps {
@@ -56,7 +62,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                                                    }) => {
     const [formData, setFormData] = useState<Record<string, any>>(initialValues);
     const [activeTab, setActiveTab] = useState<string | null>(null); // State for active tab
-
+    const [errorMessages, setErrorMessages] = useState<Record<string, string>>({});
 
     // Filter fields based on `show` and `hide` conditions before grouping them into tabs
     const filteredFields = fields.filter((field) => {
@@ -133,6 +139,43 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        const schema = Joi.object(
+            fields.reduce((acc, field) => {
+                if (field.repeatable && field.fields) {
+                    acc[field.key] = Joi.array().items(
+                        Joi.object(
+                            field.fields.reduce((nestedAcc, nestedField) => {
+                                if (nestedField.rule) {
+                                    nestedAcc[nestedField.key] = nestedField.rule;
+                                }
+                                return nestedAcc;
+                            }, {})
+                        )
+                    );
+                } else if (field.rule) {
+                    acc[field.key] = field.rule;
+                }
+                return acc;
+            }, {} as Record<string, Joi.Schema>)
+        ).unknown();
+
+
+        const { error } = schema.validate(formData, { abortEarly: false });
+
+        if (error) {
+            const errors = error.details.reduce((acc, err) => {
+                acc[err.path.join('.')] = err.message; // Join path to handle nested fields
+                return acc;
+            }, {} as Record<string, string>);
+
+            setErrorMessages(errors);
+            console.log(errors)
+
+            return;
+        }
+
+        setErrorMessages({});
         onSubmit(formData, setFormData);
     };
 
@@ -151,6 +194,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
             show,
             hide,
             component,
+            placeholder,
         } = field;
 
         const shouldShow = typeof show === 'function' ? show(formData) : true;
@@ -163,6 +207,15 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
             : index !== null
                 ? formData[key]?.[index]
                 : formData[key];
+
+        // Generate error key based on repeatable or non-repeatable
+        const errorKey = index !== null && nestedKey
+            ? `${key}.${index}.${nestedKey}` // Convert to dot notation
+            : key;
+
+        const errorMessage = errorMessages[errorKey];
+
+        const hasErrorMessage = typeof errorMessage === 'string' && errorMessage.trim() !== '';
 
         const colClass = colSize ? `col-span-${colSize}` : 'col-span-4';
 
@@ -180,7 +233,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
             case 'text':
                 return (
                     <div className={colClass} key={name}>
-                        <Input clearable bordered name={name} label={label} {...commonProps} />
+                        <Input clearable bordered name={name} label={label} isInvalid={hasErrorMessage} errorMessage={errorMessage} {...commonProps} />
                     </div>
                 );
             case 'hidden':
@@ -197,6 +250,8 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                             bordered
                             name={name}
                             label={label}
+                            isInvalid={hasErrorMessage}
+                            errorMessage={errorMessage}
                             {...commonProps}
                         />
                     </div>
@@ -207,7 +262,9 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                         <Select
                             name={name}
                             label={label}
-                            placeholder="Select an option"
+                            isInvalid={hasErrorMessage}
+                            errorMessage={errorMessage}
+                            placeholder={placeholder ?? `Select an option`}
                             onChange={(e) => handleChange(key, e.target.value, index, nestedKey)}
                             value={value || ''}
                         >
@@ -225,6 +282,8 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                         <RadioGroup
                             label={label}
                             value={value || ''}
+                            isInvalid={hasErrorMessage}
+                            errorMessage={errorMessage}
                             onValueChange={(val) => handleChange(key, val, index, nestedKey)}
                             {...attributes}
                         >
@@ -295,10 +354,15 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
         const {
             show,
             hide,
+            deletable,
+            addable,
+            addLabel
         } = field;
 
         const shouldShow = typeof show === 'function' ? show(formData) : true;
         const shouldHide = typeof hide === 'function' ? hide(formData) : false;
+        const shouldDeletable = typeof deletable === 'function' ? deletable(formData) : deletable ?? true;
+        const shouldAddable = typeof addable === 'function' ? addable(formData) : addable ?? true;
         if (!shouldShow || shouldHide) return null;
 
         return (<div
@@ -310,16 +374,17 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                     <div key={`${field.key}-${index}`} className="mb-2">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             {field.fields?.map((nestedField) => (
-                                <React.Fragment key={`${nestedField.key}-${index}`}>
-                                    {renderField(
-                                        { ...nestedField, key: field.key },
-                                        index,
-                                        nestedField.key
-                                    )}
-                                </React.Fragment>
-                            ))}
+                                    <React.Fragment key={`${nestedField.key}-${index}`}>
+                                        {renderField(
+                                            {...nestedField, key: field.key},
+                                            index,
+                                            nestedField.key
+                                        )}
+                                    </React.Fragment>
+                                ))
+                            }
                         </div>
-                        <Button
+                        { shouldDeletable && <Button
                             auto
                             flat
                             color="error"
@@ -328,17 +393,20 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                             className="mt-2"
                         >
                             Remove
-                        </Button>
+                        </Button> }
+
                     </div>
                 ))}
-                <Button
+
+                { shouldAddable && <Button
                     auto
                     flat
                     size="sm"
                     onClick={() => handleAddRepeatable(field.key)}
                 >
-                    Add {field.label}
-                </Button>
+                    {addLabel ? addLabel : `Add ` + field.label }
+                </Button> }
+
             </div>
         );
     }
