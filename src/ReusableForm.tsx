@@ -34,7 +34,14 @@ interface Field {
         | 'checkbox-group'
         | 'custom';
     options?: FieldOption[] | ((formData: Record<string, any>) => FieldOption[]);
-    colSize?: number;
+    colSize?: {
+        base?: number; // For default screen size
+        sm?: number;   // For small screens
+        md?: number;   // For medium screens
+        lg?: number;   // For large screens
+        xl?: number;   // For extra-large screens
+        '2xl'?: number; // For double extra-large screens
+    };
     attributes?: Record<string, any>;
     show?: (formData: Record<string, any>) => boolean;
     hide?: (formData: Record<string, any>) => boolean;
@@ -151,7 +158,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                                 }
                                 return nestedAcc;
                             }, {})
-                        )
+                        ).unknown()
                     );
                 } else if (field.rule) {
                     acc[field.key] = field.rule;
@@ -217,7 +224,11 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
 
         const hasErrorMessage = typeof errorMessage === 'string' && errorMessage.trim() !== '';
 
-        const colClass = colSize ? `col-span-${colSize}` : 'col-span-4';
+        // const colClass = colSize ? `col-span-${colSize}` : 'col-span-4';
+        // Define column classes based on screen sizes
+        const colClass = colSize
+            ? `col-span-${colSize.base || 4} sm:col-span-${colSize.sm || colSize.base || 4} md:col-span-${colSize.md || colSize.base || 4} lg:col-span-${colSize.lg || colSize.base || 4} xl:col-span-${colSize.xl || colSize.base || 4} 2xl:col-span-${colSize['2xl'] || colSize.base || 4}`
+            : 'col-span-4';
 
         const commonProps = {
             value: value || '',
