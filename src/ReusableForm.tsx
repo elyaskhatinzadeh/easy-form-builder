@@ -60,12 +60,14 @@ interface ReusableFormProps {
     fields: Field[];
     initialValues: Record<string, any>;
     onSubmit: (formData: Record<string, any>, setFormData: React.Dispatch<React.SetStateAction<Record<string, any>>>) => void;
+    submitLabel?: string;
 }
 
 const ReusableForm: React.FC<ReusableFormProps> = ({
                                                        fields,
                                                        initialValues,
                                                        onSubmit,
+                                                       submitLabel="Submit"
                                                    }) => {
     const [formData, setFormData] = useState<Record<string, any>>(initialValues);
     const [activeTab, setActiveTab] = useState<string | null>(null); // State for active tab
@@ -227,7 +229,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
         // const colClass = colSize ? `col-span-${colSize}` : 'col-span-4';
         // Define column classes based on screen sizes
         const colClass = colSize
-            ? `col-span-${colSize.base || 4} sm:col-span-${colSize.sm || colSize.base || 4} md:col-span-${colSize.md || colSize.base || 4} lg:col-span-${colSize.lg || colSize.base || 4} xl:col-span-${colSize.xl || colSize.base || 4} 2xl:col-span-${colSize['2xl'] || colSize.base || 4}`
+            ? `col-span-${colSize.base || 6} sm:col-span-${colSize.sm || colSize.base || 6} md:col-span-${colSize.md || colSize.base || 6} lg:col-span-${colSize.lg || colSize.base || 4} xl:col-span-${colSize.xl || colSize.base || 4} 2xl:col-span-${colSize['2xl'] || colSize.base || 4}`
             : 'col-span-4';
 
         const commonProps = {
@@ -323,6 +325,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                         <Checkbox
                             value={value || ''}
                             onValueChange={(val) => handleChange(key, val, index, nestedKey)}
+                            className="my-auto"
                             {...attributes}
                         >
                             {label}
@@ -378,12 +381,12 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
 
         return (<div
                 key={field.key}
-                className="col-span-1 sm:col-span-2 md:col-span-4 mb-4"
+                className="col-span-12 mb-4"
             >
                 <label>{field.label}</label>
                 {formData[field.key]?.map((_: any, index: number) => (
-                    <div key={`${field.key}-${index}`} className="mb-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div key={`${field.key}-${index}`} className="relative my-4">
+                        <div className="grid grid-cols-12 gap-4">
                             {field.fields?.map((nestedField) => (
                                     <React.Fragment key={`${nestedField.key}-${index}`}>
                                         {renderField(
@@ -395,28 +398,35 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                                 ))
                             }
                         </div>
-                        { shouldDeletable && <Button
+                        { shouldDeletable && <><Button
                             auto
-                            flat
-                            color="error"
-                            size="xs"
+                            variant="flat"
+                            isIconOnly
+                            color="danger"
+                            size="sm"
+                            radius="full"
                             onClick={() => handleRemoveRepeatable(field.key, index)}
-                            className="mt-2"
+                            className="absolute -right-2 -top-4"
                         >
-                            Remove
-                        </Button> }
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+
+                        </Button></> }
 
                     </div>
                 ))}
 
-                { shouldAddable && <Button
-                    auto
-                    flat
-                    size="sm"
-                    onClick={() => handleAddRepeatable(field.key)}
-                >
-                    {addLabel ? addLabel : `Add ` + field.label }
-                </Button> }
+                { shouldAddable && <div className="flex mt-4">
+                    <Button
+                        auto
+                        flat
+                        size="sm"
+                        onClick={() => handleAddRepeatable(field.key)}
+                    >
+                        {addLabel ? addLabel : `Add ` + field.label }
+                    </Button>
+                </div> }
 
             </div>
         );
@@ -425,7 +435,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
     return (
         <form onSubmit={handleSubmit}>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4">
                 {fields
                     .filter((field) => !field.tab)
                     .map((field) =>
@@ -436,10 +446,10 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
             </div>
 
             {hasTabs && (
-                <Tabs className="mb-4" selectedValue={activeTab} onValueChange={setActiveTab} disableAnimation>
+                <Tabs fullWidth className="mb-4 mx-auto" selectedValue={activeTab} onValueChange={setActiveTab} disableAnimation>
                     {Object.keys(tabbedFields).map((tabName) => (
                         <Tab key={tabName} title={tabName} value={tabName}>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 {tabbedFields[tabName].map((field) =>
                                     field.repeatable && Array.isArray(formData[field.key])
                                         ? renderRepeatableField(field)
@@ -451,8 +461,8 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                 </Tabs>
             )}
 
-            <Button type="submit" className="mt-4">
-                Submit
+            <Button type="submit" color="primary" className="mt-4">
+                {submitLabel}
             </Button>
         </form>
     );
