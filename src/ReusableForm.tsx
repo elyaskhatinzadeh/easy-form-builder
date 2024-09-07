@@ -280,6 +280,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                             placeholder={placeholder ?? `Select an option`}
                             onChange={(e) => handleChange(key, e.target.value, index, nestedKey)}
                             value={value || ''}
+                            {...commonProps}
                         >
                             {fieldOptions?.map((option) => (
                                 <SelectItem key={option.value} value={option.value}>
@@ -312,7 +313,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                 return (
                     <div className={`${colClass} flex items-center`} key={name}>
                         <Switch
-                            checked={value || false}
+                            isSelected={value || false}
                             onChange={(e) => handleChange(key, e.target.checked, index, nestedKey)}
                             {...attributes}
                         />
@@ -435,7 +436,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
     return (
         <form onSubmit={handleSubmit}>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-12 gap-4">
                 {fields
                     .filter((field) => !field.tab)
                     .map((field) =>
@@ -449,7 +450,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                 <Tabs fullWidth className="mb-4 mx-auto" selectedValue={activeTab} onValueChange={setActiveTab} disableAnimation>
                     {Object.keys(tabbedFields).map((tabName) => (
                         <Tab key={tabName} title={tabName} value={tabName}>
-                            <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-12 gap-4">
                                 {tabbedFields[tabName].map((field) =>
                                     field.repeatable && Array.isArray(formData[field.key])
                                         ? renderRepeatableField(field)
