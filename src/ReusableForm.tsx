@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useEffect, ReactNode  } from 'react';
 import Joi from 'joi';
 import {
     Input,
@@ -61,12 +61,14 @@ interface ReusableFormProps {
     initialValues: Record<string, any>;
     onSubmit: (formData: Record<string, any>, setFormData: React.Dispatch<React.SetStateAction<Record<string, any>>>) => void;
     submitLabel?: string;
+    submitButton?: ReactNode;
 }
 
 const ReusableForm: React.FC<ReusableFormProps> = ({
                                                        fields,
                                                        initialValues,
                                                        onSubmit,
+                                                       submitButton,
                                                        submitLabel="Submit"
                                                    }) => {
     const [formData, setFormData] = useState<Record<string, any>>(initialValues);
@@ -135,7 +137,8 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
     const handleAddRepeatable = (name: string) => {
         setFormData((prev) => ({
             ...prev,
-            [name]: [...(prev[name] || []), { year: '', school: '', finished: false }],
+            // [name]: [...(prev[name] || []), { year: '', school: '', finished: false }],
+            [name]: [...(prev[name] || []), { }],
         }));
     };
 
@@ -152,7 +155,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
         const schema = Joi.object(
             fields.reduce((acc, field) => {
                 if (field.repeatable && field.fields) {
-                    acc[field.key] = Joi.array().items(
+                    acc[field.key] = Joi.array().min(field.min ?? 0).max(field.max ?? 1000).items(
                         Joi.object(
                             field.fields.reduce((nestedAcc, nestedField) => {
                                 if (nestedField.rule) {
@@ -353,10 +356,15 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
             case 'custom':
                 return (
                     <div className={colClass} key={name}>
-                        {React.cloneElement(component as React.ReactElement, {
-                            value: value || '',
-                            onChange: (val: string) => handleChange(key, val, index, nestedKey),
-                        })}
+                        {component && React.isValidElement(component) ? (
+                            React.cloneElement(component as React.ReactElement, {
+                                label: label,
+                                value: value || '',
+                                onValueChange: (val) => handleChange(key, val, index, nestedKey),
+                            })
+                        ) : (
+                            <div>Invalid custom component</div> // Error handling if component is missing
+                        )}
                     </div>
                 );
             default:
@@ -380,11 +388,27 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
         const shouldAddable = typeof addable === 'function' ? addable(formData) : addable ?? true;
         if (!shouldShow || shouldHide) return null;
 
+        // Generate error key based on repeatable or non-repeatable
+        const errorKey = field.key;
+
+        const errorMessage = errorMessages[errorKey];
+
+        const hasErrorMessage = typeof errorMessage === 'string' && errorMessage.trim() !== '';
+
         return (<div
                 key={field.key}
                 className="col-span-12 mb-4"
             >
                 <label>{field.label}</label>
+                { hasErrorMessage && (
+                    <div className="flex p-1 relative flex-col gap-1.5">
+                        <span className="text-tiny text-danger">
+                            {errorMessage}
+                        </span>
+                    </div>
+                )}
+
+
                 {formData[field.key]?.map((_: any, index: number) => (
                     <div key={`${field.key}-${index}`} className="relative my-4">
                         <div className="grid grid-cols-12 gap-4">
@@ -433,6 +457,20 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
         );
     }
 
+
+    const renderSubmitButton = () => {
+        if (submitButton) {
+            return React.cloneElement(submitButton as React.ReactElement, {
+                onClick: handleSubmit,
+            });
+        }
+        return (
+            <Button type="submit" onClick={handleSubmit} color="primary" className="mt-4">
+                {submitLabel}
+            </Button>
+        );
+    };
+
     return (
         <form onSubmit={handleSubmit}>
 
@@ -462,9 +500,7 @@ const ReusableForm: React.FC<ReusableFormProps> = ({
                 </Tabs>
             )}
 
-            <Button type="submit" color="primary" className="mt-4">
-                {submitLabel}
-            </Button>
+            { renderSubmitButton() }
         </form>
     );
 };
